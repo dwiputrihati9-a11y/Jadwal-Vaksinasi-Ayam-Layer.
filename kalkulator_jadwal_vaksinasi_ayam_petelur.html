@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal & Kalkulator Vaksinasi Ayam Petelur</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: white;
+                color: black;
+            }
+            .card-shadow {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header Section -->
+    <header class="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 text-white shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
+                    <i data-lucide="syringe" class="w-8 h-8 text-emerald-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">VaksiTernak Layer</h1>
+                    <p class="text-xs text-emerald-100/80">Kalkulator & Management Jadwal Vaksinasi Ayam Petelur</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button onclick="window.print()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition flex items-center text-sm font-medium">
+                    <i data-lucide="printer" class="w-4 h-4 mr-2"></i> Cetak Jadwal
+                </button>
+                <button onclick="exportToCSV()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm transition flex items-center text-sm font-semibold">
+                    <i data-lucide="download" class="w-4 h-4 mr-2"></i> Ekspor CSV
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-6">
+
+        <!-- Banner Informasi Peternakan / Inputs -->
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 card-shadow">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                
+                <!-- Input Nama Kandang / Flock ID -->
+                <div>
+                    <label for="flockName" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center">
+                        <i data-lucide="home" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> Nama Kandang / Batch
+                    </label>
+                    <input type="text" id="flockName" value="Kandang Layer A-1" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition font-medium">
+                </div>
+
+                <!-- Input Tanggal DOC -->
+                <div>
+                    <label for="docDate" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> Tanggal DOC / Chick-In
+                    </label>
+                    <input type="date" id="docDate" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition font-medium">
+                </div>
+
+                <!-- Input Jumlah Ayam -->
+                <div>
+                    <label for="birdCount" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2 flex items-center">
+                        <i data-lucide="users" class="w-3.5 h-3.5 mr-1 text-emerald-600"></i> Jumlah Populasi (Ekor)
+                    </label>
+                    <input type="number" id="birdCount" value="1000" min="1" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition font-medium">
+                </div>
+
+                <!-- Tombol Reset & Status Update -->
+                <div class="flex space-x-2">
+                    <button onclick="recalculateDates()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-lg transition flex items-center justify-center shadow-sm">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i> Hitung Ulang
+                    </button>
+                    <button onclick="resetProgress()" title="Reset Status Selesai" class="p-2.5 border border-slate-300 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                        <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Summary & Dashboard Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- Card 1: Total Program -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Program</p>
+                    <h3 class="text-2xl font-bold text-slate-800 mt-1" id="statTotalVax">12</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Vaksinasi Terjadwal</p>
+                </div>
+                <div class="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+                    <i data-lucide="list-checks" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Card 2: Vaksin Selesai -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Vaksin Selesai</p>
+                    <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="statCompletedVax">0</h3>
+                    <p class="text-xs text-slate-500 mt-0.5" id="statCompletedPct">0% Terlaksana</p>
+                </div>
+                <div class="p-3 bg-teal-50 rounded-xl text-teal-600">
+                    <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Card 3: Mendatang / Pending -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Belum / Akan Datang</p>
+                    <h3 class="text-2xl font-bold text-amber-600 mt-1" id="statPendingVax">12</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Tugas tersisa</p>
+                </div>
+                <div class="p-3 bg-amber-50 rounded-xl text-amber-600">
+                    <i data-lucide="clock" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- Card 4: Umur Ayam Saat Ini -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Umur Flock Hari Ini</p>
+                    <h3 class="text-2xl font-bold text-cyan-700 mt-1" id="statCurrentAge">0 Hari</h3>
+                    <p class="text-xs text-slate-500 mt-0.5" id="statCurrentWeeks">(0 Minggu)</p>
+                </div>
+                <div class="p-3 bg-cyan-50 rounded-xl text-cyan-600">
+                    <i data-lucide="activity" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Progress Bar Kelengkapan Program -->
+        <section class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-sm space-y-2">
+            <div class="flex justify-between items-center text-sm font-semibold">
+                <span class="text-slate-700 flex items-center">
+                    <i data-lucide="shield-check" class="w-4 h-4 mr-1.5 text-emerald-600"></i> Progress Kelengkapan Vaksinasi Batch
+                </span>
+                <span class="text-emerald-700 font-bold" id="progressBarText">0%</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div id="progressBarFill" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </section>
+
+        <!-- Filter & Search Controls -->
+        <section class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between no-print">
+            
+            <!-- Left Side Filters -->
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                
+                <!-- Status Filter -->
+                <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg text-xs font-medium">
+                    <button onclick="setFilterStatus('all')" id="btnStatusAll" class="px-3 py-1.5 rounded-md transition bg-white shadow-sm text-slate-800 font-semibold">Semua</button>
+                    <button onclick="setFilterStatus('pending')" id="btnStatusPending" class="px-3 py-1.5 rounded-md transition text-slate-600 hover:text-slate-900">Belum</button>
+                    <button onclick="setFilterStatus('done')" id="btnStatusDone" class="px-3 py-1.5 rounded-md transition text-slate-600 hover:text-slate-900">Selesai</button>
+                </div>
+
+                <!-- Method Filter Dropdown -->
+                <div>
+                    <select id="methodFilter" onchange="renderSchedule()" class="bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-lg p-2.5 focus:ring-emerald-500 focus:border-emerald-500 block font-medium">
+                        <option value="all">Semua Metode Aplikasi</option>
+                        <option value="Injeksi">Injeksi (Subkutan / Intramuskular)</option>
+                        <option value="Tetes">Tetes (Mata / Hidung / Mulut)</option>
+                        <option value="Air Minum">Air Minum</option>
+                        <option value="Tusuk Sayap">Tusuk Sayap (Wing Web)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Right Side Search -->
+            <div class="relative w-full md:w-64">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+                </div>
+                <input type="text" id="searchInput" onkeyup="renderSchedule()" placeholder="Cari nama vaksin / penyakit..." class="bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-lg pl-9 p-2.5 w-full focus:ring-emerald-500 focus:border-emerald-500">
+            </div>
+        </section>
+
+        <!-- Printable Batch Title (Print Only) -->
+        <div class="hidden print-only mb-4 p-4 border-b">
+            <h2 class="text-xl font-bold" id="printTitle">Jadwal Vaksinasi Ayam Petelur</h2>
+            <p id="printSubTitle" class="text-sm text-slate-600">Tanggal DOC: - | Population: -</p>
+        </div>
+
+        <!-- Schedule Table / Cards Section -->
+        <section class="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                            <th class="py-3.5 px-4 text-center w-12 no-print">Status</th>
+                            <th class="py-3.5 px-4">Umur Ayam</th>
+                            <th class="py-3.5 px-4">Estimasi Tanggal</th>
+                            <th class="py-3.5 px-4">Vaksin & Penyakit Target</th>
+                            <th class="py-3.5 px-4">Metode & Dosis</th>
+                            <th class="py-3.5 px-4">Tipe Vaksin</th>
+                            <th class="py-3.5 px-4 text-center no-print">Catatan & Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scheduleTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Guide & Tips Section -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 no-print">
+            
+            <!-- Card Tips 1: Cold Chain -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm space-y-3">
+                <div class="flex items-center space-x-2 text-cyan-700 font-bold">
+                    <i data-lucide="thermometer-snowflake" class="w-5 h-5"></i>
+                    <h3>Manajemen Rantai Dingin</h3>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Vaksin aktif/aktif mati sangat sensitif terhadap suhu. Simpan vaksin pada suhu <strong>2°C - 8°C</strong>. Hindari pembekuan pada vaksin inaktif (oil adjuvant) dan terlindung dari sinar matahari langsung saat transportasi ke kandang.
+                </p>
+            </div>
+
+            <!-- Card Tips 2: Air Minum -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm space-y-3">
+                <div class="flex items-center space-x-2 text-emerald-700 font-bold">
+                    <i data-lucide="droplet" class="w-5 h-5"></i>
+                    <h3>Aplikasi Air Minum</h3>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Gunakan air bebas klorin, desinfektan, atau logam berat. Berikan <strong>stabilitator susu skim (2 gram/liter)</strong> 15-20 menit sebelum mencampur vaksin. Puasakan minum ayam selama 1-2 jam sebelum pemberian.
+                </p>
+            </div>
+
+            <!-- Card Tips 3: Kesehatan & Peralatan -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm space-y-3">
+                <div class="flex items-center space-x-2 text-teal-700 font-bold">
+                    <i data-lucide="stethoscope" class="w-5 h-5"></i>
+                    <h3>Kondisi Ayam & Peralatan</h3>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    <strong>Hanya berikan vaksin pada ayam sehat!</strong> Ayam stres atau sakit tidak akan merespons pembentukan antibodi secara optimal. Sterilisasi alat injeksi/spuit dengan cara direbus (bukan dengan bahan kimia).
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-8 no-print">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 space-y-1">
+            <p>VaksiTernak Layer &copy; Aplikasi Manajemen Peternakan Ayam Petelur Modern.</p>
+            <p class="text-slate-400">Jadwal vaksinasi merujuk pada standar manajemen kesehatan layer modern. Selalu konsultasikan dengan dokter hewan atau teknisi medis peternakan setempat.</p>
+        </div>
+    </footer>
+
+    <!-- Modal Catatan -->
+    <div id="noteModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50 no-print">
+        <div class="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-slate-800" id="modalTitle">Catatan Vaksinasi</h3>
+                <button onclick="closeNoteModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div>
+                <label for="modalNoteText" class="block text-xs font-semibold text-slate-500 uppercase mb-1">Catatan Tambahan (Merek/Batch/Petugas)</label>
+                <textarea id="modalNoteText" rows="4" placeholder="Contoh: Menggunakan merek X, batch 12345, aplikasi oleh Tim A..." class="w-full text-sm border border-slate-300 rounded-lg p-3 focus:ring-emerald-500 focus:border-emerald-500"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeNoteModal()" class="px-4 py-2 border border-slate-300 text-slate-600 text-sm font-medium rounded-lg hover:bg-slate-50">Batal</button>
+                <button onclick="saveNote()" class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700">Simpan Catatan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // Data Jadwal Vaksinasi Ayam Petelur Standard
+        const masterSchedule = [
+            {
+                id: 1,
+                dayAge: 1,
+                ageText: "Hari ke-1 (DOC)",
+                vaccine: "Marek's Disease & ND + IB Live",
+                disease: "Penyakit Marek, Newcastle Disease & Infectious Bronchitis",
+                method: "Injeksi & Tetes",
+                methodBadge: "Injeksi",
+                type: "Live & Cell-associated",
+                dosis: "0.2 ml/ekor (Injeksi SC) & 1 tetes mata/hidung",
+                description: "Vaksin Marek diinjeksi subkutan di tengkuk leher. ND-IB dikombinasikan via tetes mata."
+            },
+            {
+                id: 2,
+                dayAge: 4,
+                ageText: "Umur 4 - 7 Hari",
+                vaccine: "Gumboro / IBD Live (Dosis Awal)",
+                disease: "Infectious Bursal Disease (Gumboro)",
+                method: "Tetes",
+                methodBadge: "Tetes",
+                type: "Live Active",
+                dosis: "1 tetes mulut / via Air Minum awal",
+                description: "Perlindungan dini terhadap kerusakan Bursa Fabricius akibat virus Gumboro."
+            },
+            {
+                id: 3,
+                dayAge: 14,
+                ageText: "Umur 14 Hari (2 Minggu)",
+                vaccine: "ND + IB Live Booster",
+                disease: "Newcastle Disease & Infectious Bronchitis",
+                method: "Air Minum",
+                methodBadge: "Air Minum",
+                type: "Live Active",
+                dosis: "Via air minum (ditambah skim milk)",
+                description: "Booster kekebalan mukosa saluran pernapasan ayam."
+            },
+            {
+                id: 4,
+                dayAge: 18,
+                ageText: "Umur 18 - 21 Hari (3 Minggu)",
+                vaccine: "Gumboro Booster / IBD Live",
+                disease: "Infectious Bursal Disease (Gumboro)",
+                method: "Air Minum",
+                methodBadge: "Air Minum",
+                type: "Live Intermediate",
+                dosis: "Via air minum",
+                description: "Memperkuat titer antibodi Gumboro sebelum masa rawan umur 3-6 minggu."
+            },
+            {
+                id: 5,
+                dayAge: 28,
+                ageText: "Umur 28 Hari (4 Minggu)",
+                vaccine: "ND + IB + EDS Inaktif",
+                disease: "Newcastle Disease, IB, Egg Drop Syndrome",
+                method: "Injeksi",
+                methodBadge: "Injeksi",
+                type: "Killed / Oil Emulsion",
+                dosis: "0.3 - 0.5 ml/ekor (IM di dada/paha)",
+                description: "Vaksin inaktif untuk membentuk kekebalan protektif jangka panjang."
+            },
+            {
+                id: 6,
+                dayAge: 35,
+                ageText: "Umur 35 Hari (5 Minggu)",
+                vaccine: "Fowl Pox / Cacar Ayam",
+                disease: "Cacar / Avian Pox",
+                method: "Tusuk Sayap",
+                methodBadge: "Tusuk Sayap",
+                type: "Live Active",
+                dosis: "1 tusukan pada membran wing-web",
+                description: "Gunakan jarum khusus double-needle pada lipatan kulit sayap."
+            },
+            {
+                id: 7,
+                dayAge: 42,
+                ageText: "Umur 42 Hari (6 Minggu)",
+                vaccine: "AI (Avian Influenza) Inaktif",
+                disease: "Flu Burung (H5N1 / H7N9)",
+                method: "Injeksi",
+                methodBadge: "Injeksi",
+                type: "Killed / Oil Emulsion",
+                dosis: "0.5 ml/ekor (Subkutan / Intramuskular)",
+                description: "Vaksinasi penting pencegahan Avian Influenza fase pertama."
+            },
+            {
+                id: 8,
+                dayAge: 56,
+                ageText: "Umur 56 Hari (8 Minggu)",
+                vaccine: "ND + IB Live Booster",
+                disease: "Newcastle Disease & Infectious Bronchitis",
+                method: "Air Minum",
+                methodBadge: "Air Minum",
+                type: "Live Active (Lasota / Clone)",
+                dosis: "Via air minum / Spray kasar",
+                description: "Menjaga keaktifan antibodi lokal di organ pernapasan."
+            },
+            {
+                id: 9,
+                dayAge: 70,
+                ageText: "Umur 70 Hari (10 Minggu)",
+                vaccine: "Coryza / Snot Inaktif",
+                disease: "Infectious Coryza (Snot / Avibacterium)",
+                method: "Injeksi",
+                methodBadge: "Injeksi",
+                type: "Killed Bacterin",
+                dosis: "0.5 ml/ekor (Intramuskular)",
+                description: "Pencegahan penyakit pilek mukosa muka bengkak (Snot)."
+            },
+            {
+                id: 10,
+                dayAge: 84,
+                ageText: "Umur 84 Hari (12 Minggu)",
+                vaccine: "AI (Avian Influenza) Booster",
+                disease: "Flu Burung Booster",
+                method: "Injeksi",
+                methodBadge: "Injeksi",
+                type: "Killed / Oil Emulsion",
+                dosis: "0.5 ml/ekor (Intramuskular)",
+                description: "Booster AI agar kekebalan bertahan lama hingga masa produksi puncak."
+            },
+            {
+                id: 11,
+                dayAge: 98,
+                ageText: "Umur 98 Hari (14 Minggu)",
+                vaccine: "Coryza Booster",
+                disease: "Infectious Coryza / Snot Booster",
+                method: "Injeksi",
+                methodBadge: "Injeksi",
+                type: "Killed Bacterin",
+                dosis: "0.5 ml/ekor (Intramuskular)",
+                description: "Ulangan Coryza untuk proteksi penuh sebelum masuk kandang baterai."
+            },
+            {
+                id: 12,
+                dayAge: 112,
+                ageText: "Umur 112 Hari (16 Minggu / Pre-Lay)",
+                vaccine: "ND + IB + IBD + EDS Inaktif & ND Live",
+                disease: "Kompleks ND, IB, IBD, EDS Pre-layer",
+                method: "Injeksi",
+                methodBadge: "Injeksi",
+                type: "Killed Quadrivalent & Live",
+                dosis: "0.5 ml/ekor (Injeksi IM) + Spray/Tetes",
+                description: "Vaksinasi akhir terlengkap sebelum ayam masuk masa bertelur (Layering)."
+            }
+        ];
+
+        // State Management
+        let userState = {
+            docDate: '',
+            completedItems: {},
+            notes: {},
+            filterStatus: 'all'
+        };
+
+        let currentActiveNoteId = null;
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set default DOC Date to today minus 7 days for quick test
+            const today = new Date();
+            const defaultDOC = new Date(today);
+            defaultDOC.setDate(today.getDate() - 7);
+            
+            const docInput = document.getElementById('docDate');
+            docInput.value = defaultDOC.toISOString().split('T')[0];
+
+            loadLocalStorage();
+            recalculateDates();
+            lucide.createIcons();
+        });
+
+        // Local Storage Handling
+        function loadLocalStorage() {
+            const saved = localStorage.getItem('vaksi_layer_data');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    userState.completedItems = parsed.completedItems || {};
+                    userState.notes = parsed.notes || {};
+                    if(parsed.docDate) {
+                        document.getElementById('docDate').value = parsed.docDate;
+                    }
+                    if(parsed.flockName) {
+                        document.getElementById('flockName').value = parsed.flockName;
+                    }
+                    if(parsed.birdCount) {
+                        document.getElementById('birdCount').value = parsed.birdCount;
+                    }
+                } catch(e) {
+                    console.error('Failed loading saved state', e);
+                }
+            }
+        }
+
+        function saveLocalStorage() {
+            userState.docDate = document.getElementById('docDate').value;
+            const dataToSave = {
+                docDate: userState.docDate,
+                flockName: document.getElementById('flockName').value,
+                birdCount: document.getElementById('birdCount').value,
+                completedItems: userState.completedItems,
+                notes: userState.notes
+            };
+            localStorage.setItem('vaksi_layer_data', JSON.stringify(dataToSave));
+        }
+
+        // Recalculate Dates & Refresh UI
+        function recalculateDates() {
+            saveLocalStorage();
+            renderSchedule();
+            updateStatistics();
+            updatePrintInfo();
+        }
+
+        // Format Date Indonesian
+        function formatDateIndo(dateObj) {
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agust', 'Sep', 'Okt', 'Nov', 'Des'];
+            
+            const dayName = days[dateObj.getDay()];
+            const dayNum = dateObj.getDate();
+            const monthName = months[dateObj.getMonth()];
+            const year = dateObj.getFullYear();
+
+            return `${dayName}, ${dayNum} ${monthName} ${year}`;
+        }
+
+        // Filter Handlers
+        function setFilterStatus(status) {
+            userState.filterStatus = status;
+            
+            // Toggle active styles
+            ['btnStatusAll', 'btnStatusPending', 'btnStatusDone'].forEach(id => {
+                const btn = document.getElementById(id);
+                btn.classList.remove('bg-white', 'shadow-sm', 'text-slate-800', 'font-semibold');
+                btn.classList.add('text-slate-600');
+            });
+
+            if (status === 'all') {
+                document.getElementById('btnStatusAll').classList.add('bg-white', 'shadow-sm', 'text-slate-800', 'font-semibold');
+            } else if (status === 'pending') {
+                document.getElementById('btnStatusPending').classList.add('bg-white', 'shadow-sm', 'text-slate-800', 'font-semibold');
+            } else if (status === 'done') {
+                document.getElementById('btnStatusDone').classList.add('bg-white', 'shadow-sm', 'text-slate-800', 'font-semibold');
+            }
+
+            renderSchedule();
+        }
+
+        // Render Schedule Table
+        function renderSchedule() {
+            const docValue = document.getElementById('docDate').value;
+            const methodFilter = document.getElementById('methodFilter').value;
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const tbody = document.getElementById('scheduleTableBody');
+
+            if (!docValue) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Silakan masukkan tanggal DOC terlebih dahulu.</td></tr>`;
+                return;
+            }
+
+            const docDate = new Date(docValue);
+            tbody.innerHTML = '';
+
+            masterSchedule.forEach(item => {
+                // Calculate target date
+                const targetDate = new Date(docDate);
+                targetDate.setDate(docDate.getDate() + (item.dayAge - 1));
+
+                const isDone = !!userState.completedItems[item.id];
+
+                // Applying Status Filter
+                if (userState.filterStatus === 'pending' && isDone) return;
+                if (userState.filterStatus === 'done' && !isDone) return;
+
+                // Applying Method Filter
+                if (methodFilter !== 'all' && !item.method.includes(methodFilter)) return;
+
+                // Applying Search Query
+                if (searchQuery) {
+                    const matchName = item.vaccine.toLowerCase().includes(searchQuery);
+                    const matchDisease = item.disease.toLowerCase().includes(searchQuery);
+                    if (!matchName && !matchDisease) return;
+                }
+
+                // Badge colors for Method
+                let badgeClass = "bg-slate-100 text-slate-700";
+                if(item.methodBadge === 'Injeksi') badgeClass = "bg-rose-100 text-rose-800 border-rose-200";
+                if(item.methodBadge === 'Tetes') badgeClass = "bg-blue-100 text-blue-800 border-blue-200";
+                if(item.methodBadge === 'Air Minum') badgeClass = "bg-emerald-100 text-emerald-800 border-emerald-200";
+                if(item.methodBadge === 'Tusuk Sayap') badgeClass = "bg-amber-100 text-amber-800 border-amber-200";
+
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-slate-50/80 transition ${isDone ? 'bg-emerald-50/40' : ''}`;
+
+                const hasNote = !!userState.notes[item.id];
+
+                tr.innerHTML = `
+                    <td class="py-4 px-4 text-center no-print">
+                        <input type="checkbox" onchange="toggleDone(${item.id})" ${isDone ? 'checked' : ''} 
+                            class="w-5 h-5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+                    </td>
+                    <td class="py-4 px-4 font-semibold text-slate-900">
+                        ${item.ageText}
+                        <div class="text-xs font-normal text-slate-500">Hari ke-${item.dayAge}</div>
+                    </td>
+                    <td class="py-4 px-4 font-medium text-emerald-800">
+                        ${formatDateIndo(targetDate)}
+                    </td>
+                    <td class="py-4 px-4">
+                        <div class="font-bold text-slate-800 ${isDone ? 'line-through text-slate-400' : ''}">${item.vaccine}</div>
+                        <div class="text-xs text-slate-500">${item.disease}</div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badgeClass} mb-1">
+                            ${item.method}
+                        </span>
+                        <div class="text-xs text-slate-600 font-mono">${item.dosis}</div>
+                    </td>
+                    <td class="py-4 px-4 text-xs text-slate-600">
+                        ${item.type}
+                    </td>
+                    <td class="py-4 px-4 text-center no-print">
+                        <button onclick="openNoteModal(${item.id})" class="inline-flex items-center px-2.5 py-1.5 border border-slate-200 text-xs rounded-lg ${hasNote ? 'bg-amber-50 text-amber-700 border-amber-300 font-semibold' : 'text-slate-600 hover:bg-slate-100'} transition">
+                            <i data-lucide="notebook-pen" class="w-3.5 h-3.5 mr-1"></i>
+                            ${hasNote ? 'Ada Catatan' : 'Catatan'}
+                        </button>
+                    </td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+            if (tbody.children.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Tidak ada jadwal yang cocok dengan filter pencarian.</td></tr>`;
+            }
+
+            lucide.createIcons();
+        }
+
+        // Toggle Done Checkbox
+        function toggleDone(id) {
+            userState.completedItems[id] = !userState.completedItems[id];
+            saveLocalStorage();
+            renderSchedule();
+            updateStatistics();
+        }
+
+        // Update Header & Dashboard Statistics
+        function updateStatistics() {
+            const total = masterSchedule.length;
+            const completedCount = Object.values(userState.completedItems).filter(Boolean).length;
+            const pendingCount = total - completedCount;
+            const pct = Math.round((completedCount / total) * 100);
+
+            document.getElementById('statTotalVax').innerText = total;
+            document.getElementById('statCompletedVax').innerText = completedCount;
+            document.getElementById('statCompletedPct').innerText = `${pct}% Terlaksana`;
+            document.getElementById('statPendingVax').innerText = pendingCount;
+
+            document.getElementById('progressBarText').innerText = `${pct}%`;
+            document.getElementById('progressBarFill').style.width = `${pct}%`;
+
+            // Age Calculation
+            const docVal = document.getElementById('docDate').value;
+            if(docVal) {
+                const docDate = new Date(docVal);
+                const today = new Date();
+                // Set hours to 0 to measure exact days difference
+                docDate.setHours(0,0,0,0);
+                today.setHours(0,0,0,0);
+                
+                const diffTime = today - docDate;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // Day 1 is DOC day
+
+                if (diffDays >= 1) {
+                    const weeks = Math.floor(diffDays / 7);
+                    const remDays = diffDays % 7;
+                    document.getElementById('statCurrentAge').innerText = `${diffDays} Hari`;
+                    document.getElementById('statCurrentWeeks').innerText = `(${weeks} Mgg ${remDays} Hari)`;
+                } else {
+                    document.getElementById('statCurrentAge').innerText = `Belum DOC`;
+                    document.getElementById('statCurrentWeeks').innerText = `(Tgl Mundur)`;
+                }
+            }
+        }
+
+        // Reset Progress
+        function resetProgress() {
+            if(confirm("Apakah Anda yakin ingin mereset semua status vaksinasi yang selesai?")) {
+                userState.completedItems = {};
+                userState.notes = {};
+                saveLocalStorage();
+                renderSchedule();
+                updateStatistics();
+            }
+        }
+
+        // Modal Note Handling
+        function openNoteModal(id) {
+            currentActiveNoteId = id;
+            const item = masterSchedule.find(x => x.id === id);
+            document.getElementById('modalTitle').innerText = `Catatan: ${item.vaccine}`;
+            document.getElementById('modalNoteText').value = userState.notes[id] || '';
+            document.getElementById('noteModal').classList.remove('hidden');
+            document.getElementById('noteModal').classList.add('flex');
+        }
+
+        function closeNoteModal() {
+            document.getElementById('noteModal').classList.add('hidden');
+            document.getElementById('noteModal').classList.remove('flex');
+            currentActiveNoteId = null;
+        }
+
+        function saveNote() {
+            if (currentActiveNoteId) {
+                const text = document.getElementById('modalNoteText').value.trim();
+                if (text) {
+                    userState.notes[currentActiveNoteId] = text;
+                } else {
+                    delete userState.notes[currentActiveNoteId];
+                }
+                saveLocalStorage();
+                renderSchedule();
+                closeNoteModal();
+            }
+        }
+
+        // Update Print Information Header
+        function updatePrintInfo() {
+            const flock = document.getElementById('flockName').value || 'Flock Ayam Petelur';
+            const doc = document.getElementById('docDate').value || '-';
+            const birds = document.getElementById('birdCount').value || '0';
+
+            document.getElementById('printTitle').innerText = `Jadwal Vaksinasi Ayam Petelur - ${flock}`;
+            document.getElementById('printSubTitle').innerText = `Tanggal DOC / Chick-In: ${doc} | Populer: ${birds} Ekor`;
+        }
+
+        // Export Data to CSV
+        function exportToCSV() {
+            const docVal = document.getElementById('docDate').value;
+            if (!docVal) {
+                alert('Silakan tentukan tanggal DOC terlebih dahulu.');
+                return;
+            }
+
+            const docDate = new Date(docVal);
+            const flock = document.getElementById('flockName').value || 'Kandang';
+            
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Umur,Estimasi Tanggal,Nama Vaksin,Target Penyakit,Metode,Dosis,Tipe,Status,Catatan\n";
+
+            masterSchedule.forEach(item => {
+                const targetDate = new Date(docDate);
+                targetDate.setDate(docDate.getDate() + (item.dayAge - 1));
+                const dateStr = targetDate.toISOString().split('T')[0];
+                const isDone = userState.completedItems[item.id] ? "Selesai" : "Belum";
+                const note = (userState.notes[item.id] || '').replace(/"/g, '""');
+
+                csvContent += `"${item.ageText}","${dateStr}","${item.vaccine}","${item.disease}","${item.method}","${item.dosis}","${item.type}","${isDone}","${note}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Jadwal_Vaksin_${flock.replace(/\s+/g, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
